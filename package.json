@@ -1,11 +1,12 @@
 {
   "dependencies": {
+    "dayjs": "^1.11.13",
     "metaapi.cloud-sdk": "^29.0.0",
     "nodemon": "^3.1.7"
   },
   "name": "roboty",
   "version": "1.0.0",
   "scripts": {
-    "dev": "nodemon --env-file=.env index.js"
+    "dev": "nodemon --env-file=.env server.js"
   }
 }

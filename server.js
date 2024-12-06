@@ -1,3 +1,5 @@
+// https://github.com/metaapi/metaapi-javascript-sdk/blob/main/docs/metaApi/streamingApi.md
+
 const SynchronizationListener =
   require("metaapi.cloud-sdk").SynchronizationListener;
 const MetaApi = require("metaapi.cloud-sdk").default;
@@ -19,7 +21,7 @@ class QuoteListener extends SynchronizationListener {
       .set("second", 0)
       .set("millisecond", 0)
       .toISOString();
-    this.risk = 10; // Risk in USD
+    this.risk = 1; // Risk in USD
     this.lot_size = 0.01;
   }
 
@@ -39,7 +41,8 @@ class QuoteListener extends SynchronizationListener {
           .toISOString();
 
         if (timenow > this.time) {
-          await this.orderBuy();
+          await this.strategy();
+          // await this.orderBuy();
           this.time = timenow;
         }
       }
@@ -50,29 +53,55 @@ class QuoteListener extends SynchronizationListener {
     if (this.price?.bid && this.price?.ask) {
       const tp = this.price.bid + this.risk;
       const sl = this.price.bid - this.risk;
-
-      console.log("Order BUY", "tp=", tp, "sl=", sl);
-
-      // await this.connection.createMarketBuyOrder(symbol, 0.01, sl, tp, {
-      //   comment: "BUY",
-      //   clientId: "TE_GOLD_7hyINWqAl",
-      // });
-
-      const terminal = this.connection.terminalState;
-
-      const orders = terminal.positions.map(f => {
-        console.log(f)
-      })
+      await this.connection.createMarketBuyOrder(symbol, 0.01, sl, tp, {
+        comment: "BUY",
+        clientId: "TE_GOLD_7hy",
+      });
+      console.log("BUY ORDER", "tp=", tp, "sl=", sl);
     }
   }
 
   async orderSell() {
-    console.log("Order SELL");
+    if (this.price?.bid && this.price?.ask) {
+      const tp = this.price.bid - this.risk;
+      const sl = this.price.bid + this.risk;
+      await this.connection.createMarketSellOrder(symbol, 0.01, sl, tp, {
+        comment: "SELL",
+        clientId: "TE_GOLD_7hy",
+      });
+      console.log("SELL ORDER", "tp=", tp, "sl=", sl);
+    }
   }
 
-  async orderBuyLimit() {}
+  async strategy() {
+    const historyStorage = this.connection.historyStorage;
+    const state = this.connection.terminalState;
 
-  async orderSellLimit() {}
+    if (state.positions.length == 0) {
+      if (historyStorage.historyOrders.length > 0) {
+        const lastDeal = historyStorage.deals
+          .filter((f) => f.symbol === symbol)
+          .sort((a, b) => a.time - b.time)
+          .pop();
+
+        if (lastDeal.type === "DEAL_TYPE_SELL") {
+          if (lastDeal.profit < 0) {
+            await this.orderSell();
+          } else {
+            await this.orderBuy();
+          }
+        } else if (lastDeal.type === "DEAL_TYPE_BUY") {
+          if (lastDeal.profit < 0) {
+            await this.orderBuy();
+          } else {
+            await this.orderSell();
+          }
+        }
+      } else {
+        await this.orderBuy();
+      }
+    }
+  }
 }
 
 async function main() {

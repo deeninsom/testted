@@ -19,34 +19,74 @@ class QuoteListener extends SynchronizationListener {
       .set("second", 0)
       .set("millisecond", 0)
       .toISOString();
+    this.risk = 10; // Risk in USD
+    this.lot_size = 0.01;
   }
+
+  async onSymbolPriceUpdated(_i, price) {
+    if (price.symbol == symbol) {
+      this.price = price;
+    }
+  }
+
   async onCandlesUpdated(_instanceIndex, candles) {
     for (const candle of candles) {
-      console.log(candle.symbol, candle.timeframe);
+      console.log(candle.symbol, candle.timeframe, candle.time);
       if (candle.symbol === symbol && candle.timeframe === timeframe) {
         const timenow = dayjs(candle.time)
           .set("second", 0)
           .set("millisecond", 0)
           .toISOString();
+
         if (timenow > this.time) {
-          console.log("new candle=", timenow, "Close=", candle.close);
+          await this.orderBuy();
           this.time = timenow;
         }
       }
     }
   }
+
+  async orderBuy() {
+    if (this.price?.bid && this.price?.ask) {
+      const tp = this.price.bid + this.risk;
+      const sl = this.price.bid - this.risk;
+
+      console.log("Order BUY", "tp=", tp, "sl=", sl);
+
+      // await this.connection.createMarketBuyOrder(symbol, 0.01, sl, tp, {
+      //   comment: "BUY",
+      //   clientId: "TE_GOLD_7hyINWqAl",
+      // });
+
+      const terminal = this.connection.terminalState;
+
+      const orders = terminal.positions.map(f => {
+        console.log(f)
+      })
+    }
+  }
+
+  async orderSell() {
+    console.log("Order SELL");
+  }
+
+  async orderBuyLimit() {}
+
+  async orderSellLimit() {}
 }
 
 async function main() {
   try {
-    const account = await api.metatraderAccountApi.getAccount(accountId);
-    const connection = account.getStreamingConnection();
-    const quoteListener = new QuoteListener();
-    connection.addSynchronizationListener(quoteListener);
-    await connection.connect();
-    await connection.waitSynchronized();
-    await connection.subscribeToMarketData(symbol, [
+    const meta = new QuoteListener();
+    meta.account = await api.metatraderAccountApi.getAccount(accountId);
+    meta.connection = meta.account.getStreamingConnection();
+    meta.connection.addSynchronizationListener(meta);
+    await meta.connection.connect();
+    await meta.connection.waitSynchronized();
+    await meta.connection.subscribeToMarketData(symbol, [
       { type: "candles", timeframe, intervalInMilliseconds: 10000 },
+      { type: "quotes", intervalInMilliseconds: 5000 },
+      { type: "ticks" },
     ]);
   } catch (error) {
     console.log(error);

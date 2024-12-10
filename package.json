@@ -7,6 +7,6 @@
   "name": "roboty",
   "version": "1.0.0",
   "scripts": {
-    "dev": "nodemon --env-file=.env server.js"
+    "dev": "nodemon --env-file=.env meta.js"
   }
 }

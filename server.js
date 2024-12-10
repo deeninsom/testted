@@ -86,15 +86,15 @@ class QuoteListener extends SynchronizationListener {
 
         if (lastDeal.type === "DEAL_TYPE_SELL") {
           if (lastDeal.profit < 0) {
-            await this.orderSell();
-          } else {
             await this.orderBuy();
+          } else {
+            await this.orderSell();
           }
         } else if (lastDeal.type === "DEAL_TYPE_BUY") {
           if (lastDeal.profit < 0) {
-            await this.orderBuy();
-          } else {
             await this.orderSell();
+          } else {
+            await this.orderBuy();
           }
         }
       } else {

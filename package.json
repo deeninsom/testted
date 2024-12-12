@@ -8,6 +8,6 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "nodemon --env-file=.env meta.js",
-    "start": "node meta.js"
+    "start": "node --env-file=.env meta.js"
   }
 }

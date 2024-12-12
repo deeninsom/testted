@@ -20,12 +20,12 @@ class QuoteListener extends SynchronizationListener {
       .set("millisecond", 0)
       .toISOString();
     this.risk = 1; // Risk in USD
-    this.lot_size = 0.01;
+    this.lot_size = 0.1;
   }
 
   async orderBuy() {
     if (this.price?.bid && this.price?.ask) {
-      const tp = this.price.bid + this.risk;
+      const tp = this.price.bid + (this.risk + 0.5);
       const sl = this.price.bid - this.risk;
       await this.connection.createMarketBuyOrder(symbol, this.lot_size, sl, tp, {
         comment: "BUY",
@@ -37,7 +37,7 @@ class QuoteListener extends SynchronizationListener {
 
   async orderSell() {
     if (this.price?.bid && this.price?.ask) {
-      const tp = this.price.bid - this.risk;
+      const tp = this.price.bid - (this.risk + 0.5);
       const sl = this.price.bid + this.risk;
       await this.connection.createMarketSellOrder(symbol, this.lot_size, sl, tp, {
         comment: "SELL",
@@ -102,25 +102,25 @@ class QuoteListener extends SynchronizationListener {
         // Last order is BUY and loss
         if (lastOrder.type === "DEAL_TYPE_SELL" && lastOrder.profit < 0) {
           this.lot_size = lastOrder.volume * 2;
-          await this.orderBuy();
+          await this.orderSell();
         }
 
         // Last order is BUY and profit
         if (lastOrder.type === "DEAL_TYPE_SELL" && lastOrder.profit > 0) {
           this.lot_size = 0.01;
-          await this.orderSell();
+          await this.orderBuy();
         }
 
         // Last order is SELL and loss
         if (lastOrder.type === "DEAL_TYPE_BUY" && lastOrder.profit < 0) {
           this.lot_size = lastOrder.volume * 2;
-          await this.orderSell();
+          await this.orderBuy();
         }
 
         // Last order is SELL and profit
         if (lastOrder.type === "DEAL_TYPE_BUY" && lastOrder.profit > 0) {
           this.lot_size = 0.01;
-          await this.orderBuy();
+          await this.orderSell();
         }
       } else {
         this.orderBuy();

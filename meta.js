@@ -101,7 +101,7 @@ class QuoteListener extends SynchronizationListener {
       if (historyStorage.historyOrders.length > 0) {
         // Last order is BUY and loss
         if (lastOrder.type === "DEAL_TYPE_SELL" && lastOrder.profit < 0) {
-          this.lot_size = lastOrder.volume * 2;
+          this.lot_size = lastOrder.volume <= 0.4 ? lastOrder.volume * 2 : this.lot_size;
           await this.orderSell();
         }
 
@@ -113,7 +113,7 @@ class QuoteListener extends SynchronizationListener {
 
         // Last order is SELL and loss
         if (lastOrder.type === "DEAL_TYPE_BUY" && lastOrder.profit < 0) {
-          this.lot_size = lastOrder.volume * 2;
+          this.lot_size = lastOrder.volume <= 0.4 ? lastOrder.volume * 2 : this.lot_size;
           await this.orderBuy();
         }
 

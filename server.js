@@ -55,7 +55,7 @@ class QuoteListener extends SynchronizationListener {
       const sl = this.price.bid - this.risk;
       await this.connection.createMarketBuyOrder(symbol, 0.01, sl, tp, {
         comment: "BUY",
-        clientId: "TE_GOLD_7hy",
+        // clientId: "TE_GOLD_7hy",
       });
       console.log("BUY ORDER", "tp=", tp, "sl=", sl);
     }
@@ -67,7 +67,7 @@ class QuoteListener extends SynchronizationListener {
       const sl = this.price.bid + this.risk;
       await this.connection.createMarketSellOrder(symbol, 0.01, sl, tp, {
         comment: "SELL",
-        clientId: "TE_GOLD_7hy",
+        // clientId: "TE_GOLD_7hy",
       });
       console.log("SELL ORDER", "tp=", tp, "sl=", sl);
     }

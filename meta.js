@@ -19,7 +19,7 @@ class QuoteListener extends SynchronizationListener {
       .set("second", 0)
       .set("millisecond", 0)
       .toISOString();
-    this.risk = 0.100; // Risk in USD
+    this.risk = 0.166; // Risk in USD
     this.lot_size = 0.1;
   }
 

@@ -25,7 +25,7 @@ class QuoteListener extends SynchronizationListener {
 
   async orderBuy() {
     if (this.price?.bid && this.price?.ask) {
-      const tp = this.price.bid + (this.risk + 0.050);
+      const tp = this.price.bid + (this.risk);
       const sl = this.price.bid - this.risk;
       await this.connection.createMarketBuyOrder(symbol, this.lot_size, sl, tp, {
         comment: "BUY",
@@ -37,7 +37,7 @@ class QuoteListener extends SynchronizationListener {
 
   async orderSell() {
     if (this.price?.bid && this.price?.ask) {
-      const tp = this.price.bid - (this.risk + 0.50);
+      const tp = this.price.bid - (this.risk );
       const sl = this.price.bid + this.risk;
       await this.connection.createMarketSellOrder(symbol, this.lot_size, sl, tp, {
         comment: "SELL",

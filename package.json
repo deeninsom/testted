@@ -4,7 +4,7 @@
     "metaapi.cloud-sdk": "^29.0.0",
     "nodemon": "^3.1.7"
   },
-  "name": "roboty",
+  "name": "test",
   "version": "1.0.0",
   "scripts": {
     "dev": "nodemon --env-file=.env meta.js",

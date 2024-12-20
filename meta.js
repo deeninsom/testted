@@ -19,14 +19,15 @@ class QuoteListener extends SynchronizationListener {
       .set("second", 0)
       .set("millisecond", 0)
       .toISOString();
-    this.risk = 0.166; // Risk in USD
+    this.risk = 0.166; 
+    this.loss = 0.050
     this.lot_size = 0.1;
   }
 
   async orderBuy() {
     if (this.price?.bid && this.price?.ask) {
       const tp = this.price.bid + (this.risk);
-      const sl = this.price.bid - this.risk;
+      const sl = this.price.bid - this.loss;
       await this.connection.createMarketBuyOrder(symbol, this.lot_size, sl, tp, {
         comment: "BUY",
         // clientId: "TE_GOLD_7hy",
@@ -38,7 +39,7 @@ class QuoteListener extends SynchronizationListener {
   async orderSell() {
     if (this.price?.bid && this.price?.ask) {
       const tp = this.price.bid - (this.risk );
-      const sl = this.price.bid + this.risk;
+      const sl = this.price.bid + this.loss;
       await this.connection.createMarketSellOrder(symbol, this.lot_size, sl, tp, {
         comment: "SELL",
         // clientId: "TE_GOLD_7hy",

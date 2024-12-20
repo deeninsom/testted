@@ -19,57 +19,48 @@ class QuoteListener extends SynchronizationListener {
       .set("second", 0)
       .set("millisecond", 0)
       .toISOString();
-    this.risk = 0.166; 
-    this.loss = 0.050
+    this.risk = 0.166;
+    this.loss = 0.050;
     this.lot_size = 0.1;
+    this.max_lot_size = 0.4;
+    this.cooldownTime = null; // Menyimpan waktu cooldown (jeda)
+  }
+
+  async getLossCountFromHistory() {
+    const historyStorage = this.connection.historyStorage;
+
+    // Ambil 3 transaksi terakhir berdasarkan waktu
+    const lastDeals = historyStorage.deals
+      .filter((deal) => deal.symbol === symbol)
+      .sort((a, b) => b.time - a.time)
+      .slice(0, 3);
+
+    // Hitung jumlah transaksi yang mengalami kerugian
+    const lossCount = lastDeals.filter((deal) => deal.profit < 0).length;
+    return lossCount;
   }
 
   async orderBuy() {
+    if (this.lot_size > this.max_lot_size) this.lot_size = this.max_lot_size;
     if (this.price?.bid && this.price?.ask) {
-      const tp = this.price.bid + (this.risk);
+      const tp = this.price.bid + this.risk;
       const sl = this.price.bid - this.loss;
       await this.connection.createMarketBuyOrder(symbol, this.lot_size, sl, tp, {
         comment: "BUY",
-        // clientId: "TE_GOLD_7hy",
       });
-      console.log("BUY ORDER", "tp=", tp, "sl=", sl);
+      console.log("BUY ORDER", "tp=", tp, "sl=", sl, "lot=", this.lot_size);
     }
   }
 
   async orderSell() {
+    if (this.lot_size > this.max_lot_size) this.lot_size = this.max_lot_size;
     if (this.price?.bid && this.price?.ask) {
-      const tp = this.price.bid - (this.risk );
+      const tp = this.price.bid - this.risk;
       const sl = this.price.bid + this.loss;
       await this.connection.createMarketSellOrder(symbol, this.lot_size, sl, tp, {
         comment: "SELL",
-        // clientId: "TE_GOLD_7hy",
       });
-      console.log("SELL ORDER", "tp=", tp, "sl=", sl);
-    }
-  }
-
-  async posOpen() {
-    const state = this.connection.terminalState;
-    return state.positions.length;
-  }
-
-  async historyOrder() {
-    const historyStorage = this.connection.historyStorage;
-    return historyStorage.historyOrders.length;
-  }
-
-  async lastOrder() {
-    const historyStorage = this.connection.historyStorage;
-    const lastDeal = historyStorage.deals
-      .filter((f) => f.symbol === symbol)
-      .sort((a, b) => a.time - b.time)
-      .pop();
-    return lastDeal;
-  }
-
-  async onSymbolPriceUpdated(_i, price) {
-    if (price.symbol == symbol) {
-      this.price = price;
+      console.log("SELL ORDER", "tp=", tp, "sl=", sl, "lot=", this.lot_size);
     }
   }
 
@@ -91,40 +82,49 @@ class QuoteListener extends SynchronizationListener {
   }
 
   async strategy() {
+    const currentTime = dayjs();
+
+    // Cek apakah dalam kondisi cooldown (jeda waktu)
+    if (this.cooldownTime && currentTime.isBefore(this.cooldownTime)) {
+      console.log("Cooldown aktif, menunggu 1 jam...");
+      return;
+    }
+
     const historyStorage = this.connection.historyStorage;
     const state = this.connection.terminalState;
     const lastOrder = historyStorage.deals
-      .filter((f) => f.symbol === symbol)
+      .filter((deal) => deal.symbol === symbol)
       .sort((a, b) => a.time - b.time)
       .pop();
 
-    if (state.positions.length == 0) {
-      if (historyStorage.historyOrders.length > 0) {
-        // Last order is BUY and loss
-        if (lastOrder.type === "DEAL_TYPE_SELL" && lastOrder.profit < 0) {
-          this.lot_size = lastOrder.volume <= 0.4 ? lastOrder.volume * 2 : this.lot_size;
-          await this.orderSell();
-        }
+    // Hitung jumlah loss berturut-turut
+    const lossCount = await this.getLossCountFromHistory();
+    console.log("Loss Count (Last 3 Deals):", lossCount);
 
-        // Last order is BUY and profit
-        if (lastOrder.type === "DEAL_TYPE_SELL" && lastOrder.profit > 0) {
+    // Jika 3 kali berturut-turut loss, aktifkan cooldown
+    if (lossCount >= 3) {
+      this.cooldownTime = currentTime.add(1, "hour");
+      console.log("Tiga kali loss berturut-turut, cooldown 1 jam dimulai...");
+      return;
+    }
+
+    if (state.positions.length === 0) {
+      if (historyStorage.historyOrders.length > 0) {
+        if (lastOrder.type === "DEAL_TYPE_SELL" && lastOrder.profit < 0) {
+          this.lot_size = Math.min(lastOrder.volume * 2, this.max_lot_size);
+          await this.orderSell();
+        } else if (lastOrder.type === "DEAL_TYPE_SELL" && lastOrder.profit > 0) {
           this.lot_size = 0.01;
           await this.orderBuy();
-        }
-
-        // Last order is SELL and loss
-        if (lastOrder.type === "DEAL_TYPE_BUY" && lastOrder.profit < 0) {
-          this.lot_size = lastOrder.volume <= 0.4 ? lastOrder.volume * 2 : this.lot_size;
+        } else if (lastOrder.type === "DEAL_TYPE_BUY" && lastOrder.profit < 0) {
+          this.lot_size = Math.min(lastOrder.volume * 2, this.max_lot_size);
           await this.orderBuy();
-        }
-
-        // Last order is SELL and profit
-        if (lastOrder.type === "DEAL_TYPE_BUY" && lastOrder.profit > 0) {
+        } else if (lastOrder.type === "DEAL_TYPE_BUY" && lastOrder.profit > 0) {
           this.lot_size = 0.01;
           await this.orderSell();
         }
       } else {
-        this.orderBuy();
+        await this.orderBuy(); // Posisi awal
       }
     }
   }

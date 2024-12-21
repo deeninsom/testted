@@ -19,8 +19,8 @@ class QuoteListener extends SynchronizationListener {
       .set("second", 0)
       .set("millisecond", 0)
       .toISOString();
-    this.risk = 0.166;
-    this.loss = 0.050;
+    this.risk = 0.1;
+    this.loss = 0.05;
     this.lot_size = 0.1;
     this.max_lot_size = 0.4;
     this.cooldownTime = null; // Menyimpan waktu cooldown (jeda)
@@ -98,15 +98,15 @@ class QuoteListener extends SynchronizationListener {
       .pop();
 
     // Hitung jumlah loss berturut-turut
-    const lossCount = await this.getLossCountFromHistory();
-    console.log("Loss Count (Last 3 Deals):", lossCount);
+   // const lossCount = await this.getLossCountFromHistory();
+  //  console.log("Loss Count (Last 3 Deals):", lossCount);
 
     // Jika 3 kali berturut-turut loss, aktifkan cooldown
-    if (lossCount >= 3) {
-      this.cooldownTime = currentTime.add(1, "hour");
-      console.log("Tiga kali loss berturut-turut, cooldown 1 jam dimulai...");
-      return;
-    }
+  //  if (lossCount >= 3) {
+ //     this.cooldownTime = currentTime.add(1, "hour");
+ //     console.log("Tiga kali loss berturut-turut, cooldown 1 jam dimulai...");
+//      return;
+//    }
 
     if (state.positions.length === 0) {
       if (historyStorage.historyOrders.length > 0) {
